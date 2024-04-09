@@ -41,17 +41,18 @@ class ImageResizer:
         # Create a mask
         mask = Image.new('L', img.size, 0)
         draw = ImageDraw.Draw(mask)
-        # Draw rounded corners
-        # draw.pieslice((0, 0, radius * 2, radius * 2), 180, 270, fill=255)  # Top-left corner
-        # draw.pieslice((img.size[0] - radius * 2, 0, img.size[0], radius * 2), -90, 0, fill=255)  # Top-right corner
-        # draw.pieslice((0, img.size[1] - radius * 2, radius * 2, img.size[1]), 90, 180, fill=255)  # Bottom-left corner
-        # draw.pieslice((img.size[0] - radius * 2, img.size[1] - radius * 2, img.size[0], img.size[1]), 0, 90, fill=255)  # Bottom-right corner
-        # draw.rectangle((radius, 0, img.size[0] - radius, img.size[1]), fill=255)  # Top and bottom rectangles
-        # draw.rectangle((0, radius, img.size[0], img.size[1] - radius), fill=255)  # Left and right rectangles
+        # Draw rounded corners for all four corners
         draw.pieslice((0, 0, radius * 2, radius * 2), 180, 270, fill=255)  # Top-left corner
         draw.pieslice((img.size[0] - radius * 2, 0, img.size[0], radius * 2), -90, 0, fill=255)  # Top-right corner
-        draw.rectangle((radius, 0, img.size[0] - radius, radius), fill=255)  # Top rectangle
-        draw.rectangle((0, radius, img.size[0], img.size[1]), fill=255)  # Left and right rectangles
+        draw.pieslice((0, img.size[1] - radius * 2, radius * 2, img.size[1]), 90, 180, fill=255)  # Bottom-left corner
+        draw.pieslice((img.size[0] - radius * 2, img.size[1] - radius * 2, img.size[0], img.size[1]), 0, 90, fill=255)  # Bottom-right corner
+        draw.rectangle((radius, 0, img.size[0] - radius, img.size[1]), fill=255)  # Top and bottom rectangles
+        draw.rectangle((0, radius, img.size[0], img.size[1] - radius), fill=255)  # Left and right rectangles
+        # Draw rounded corners for the top two corners, comment the previous section
+        # draw.pieslice((0, 0, radius * 2, radius * 2), 180, 270, fill=255)  # Top-left corner
+        # draw.pieslice((img.size[0] - radius * 2, 0, img.size[0], radius * 2), -90, 0, fill=255)  # Top-right corner
+        # draw.rectangle((radius, 0, img.size[0] - radius, radius), fill=255)  # Top rectangle
+        # draw.rectangle((0, radius, img.size[0], img.size[1]), fill=255)  # Left and right rectangles
         # Apply the mask to the image
         img.putalpha(mask)
         # Save the image
@@ -74,28 +75,22 @@ class ImageResizer:
             if self.src_file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
                 # ffmpeg process
                 subprocess.run(['ffmpeg','-y', '-i', self.src_file, '-vf', 'scale=636:422,boxblur=10:10', self.target_file], check=True)
-
                 # create a temporary file for the overlay
                 temp_file = os.path.join(os.path.dirname(self.target_file), "temp_" + os.path.basename(self.src_file))
                 # copy the original image to the temporary file
                 subprocess.run(['cp', self.src_file, temp_file], check=True)
-
                 # resize the original image to 720 height and proportional width
                 resized_file = os.path.join(os.path.dirname(self.target_file), "resized_" + os.path.basename(self.src_file))
                 subprocess.run(['ffmpeg', '-y', '-i', temp_file, '-vf', 'scale=-1:422', resized_file], check=True)
-
                 # overlay the original image on top of the blurred image, centered in the frame
                 overlay_file = os.path.join(os.path.dirname(self.target_file), "overlay_" + os.path.basename(self.src_file))
                 subprocess.run(['ffmpeg', '-y', '-i', self.target_file, '-i', resized_file, '-filter_complex', 'overlay=(W-w)/2:(H-h)/2', overlay_file], check=True)
-
                 # draw the box
                 banner_file = os.path.join(os.path.dirname(self.target_file), "final_" + os.path.basename(self.src_file))
                 subprocess.run(['ffmpeg', '-y', '-i', overlay_file, '-vf', 'drawbox=y=ih-h:w=iw:h=140:color=black@0.7:t=fill', banner_file], check=True)
-                # rounds the corners of the image
                 # move the final file to the target file
                 os.rename(banner_file, self.target_file)
                 self.round_corners()
-
                 # remove the temporary file
                 os.remove(temp_file)
                 os.remove(resized_file)
