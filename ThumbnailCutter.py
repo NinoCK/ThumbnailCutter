@@ -1,3 +1,12 @@
+"""
+ThumbnailCutter.py
+Author: Konstantinos Konis
+
+This program modifies an image by resizing it and adding a blurred background with a black banner at the bottom.
+The program uses ffmpeg to resize the image and add the blurred background and banner.
+Use it by calling the program from the command line with the source image file path and the target image file path as arguments.
+"""
+
 import os
 import subprocess
 import argparse
@@ -81,7 +90,7 @@ class ImageResizer:
 
                 # draw the box
                 banner_file = os.path.join(os.path.dirname(self.target_file), "final_" + os.path.basename(self.src_file))
-                subprocess.run(['ffmpeg', '-y', '-i', overlay_file, '-vf', 'drawbox=y=ih-h:w=iw:h=140:color=black@0.45:t=fill', banner_file], check=True)
+                subprocess.run(['ffmpeg', '-y', '-i', overlay_file, '-vf', 'drawbox=y=ih-h:w=iw:h=140:color=black@0.7:t=fill', banner_file], check=True)
                 # rounds the corners of the image
                 # move the final file to the target file
                 os.rename(banner_file, self.target_file)
